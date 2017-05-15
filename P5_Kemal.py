@@ -7,10 +7,10 @@ import glob
 import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
-
 from sklearn.model_selection import train_test_split
-
 from lesson_functions import *
+
+debug_prt=1
 
 '''
 dist_pickle = pickle.load(open("svc_pickle.p", "rb"))
@@ -23,11 +23,6 @@ spatial_size = dist_pickle["spatial_size"]
 hist_bins = dist_pickle["hist_bins"]
 '''
 img = mpimg.imread('./sample/bbox-example-image.jpg')
-
-
-
-
-debug_prt=1
 
 cars=get_image_paths('./vehicles_smallset/cars1_2_3/*.jpeg')
 notcars=get_image_paths('./non-vehicles_smallset/notcars1_2_3/*.jpeg')
