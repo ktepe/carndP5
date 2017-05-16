@@ -126,21 +126,8 @@ def draw_labeled_bboxes(img, labels):
     # Return the image
     return img
 
-
-
-
-# Read in cars and notcars
-
-image = mpimg.imread('./sample/bbox-example-image.jpg')
-
 cars = get_image_paths('./vehicles_smallset/cars1_2_3/*.jpeg')
 notcars = get_image_paths('./non-vehicles_smallset/notcars1_2_3/*.jpeg')
-
-# Reduce the sample size because
-# The quiz evaluator times out after 13s of CPU time
-#sample_size = 500
-#cars = cars[0:sample_size]
-#notcars = notcars[0:sample_size]
 
 ### TODO: Tweak these parameters and see how the results change.
 color_space = 'RGB'  # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
@@ -153,7 +140,7 @@ hist_bins = 16  # Number of histogram bins
 spatial_feat = True  # Spatial features on or off
 hist_feat = True  # Histogram features on or off
 hog_feat = True  # HOG features on or off
-y_start_stop = [None, None]  # Min and max in y to search in slide_window()
+y_start_stop = [400, 720]  # Min and max in y to search in slide_window()
 
 car_features = extract_features(cars, color_space=color_space,
                                 spatial_size=spatial_size, hist_bins=hist_bins,
@@ -196,17 +183,18 @@ print(round(t2 - t, 2), 'Seconds to train SVC...')
 print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
 # Check the prediction time for a single sample
 t = time.time()
-
-
-draw_image = np.copy(image)
+#finish training
+image = mpimg.imread('./sample/bbox-example-image.jpg')
 
 # Uncomment the following line if you extracted training
 # data from .png images (scaled 0 to 1 by mpimg) and the
 # image you are searching is a .jpg (scaled 0 to 255)
 # image = image.astype(np.float32)/255
 
+
 windows = slide_window(image, x_start_stop=[None, None], y_start_stop=y_start_stop,
-                       xy_window=(96, 96), xy_overlap=(0.5, 0.5))
+                       xy_window=(64, 64), xy_overlap=(0.5, 0.5))
+
 
 hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_space,
                              spatial_size=spatial_size, hist_bins=hist_bins,
@@ -215,18 +203,14 @@ hot_windows = search_windows(image, windows, svc, X_scaler, color_space=color_sp
                              hog_channel=hog_channel, spatial_feat=spatial_feat,
                              hist_feat=hist_feat, hog_feat=hog_feat)
 
-window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
-
 
 from scipy.ndimage.measurements import label
 
-# Read in a pickle file with bboxes saved
-# Each item in the "all_bboxes" list will contain a
-# list of boxes for one of the images shown above
-box_list = pickle.load(open("bbox_pickle.p", "rb"))
+
+box_list = hot_windows
 
 # Read in image similar to one shown above
-image = mpimg.imread('test_image.jpg')
+
 heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 
 
@@ -252,15 +236,13 @@ plt.imshow(heatmap, cmap='hot')
 plt.title('Heat Map')
 fig.tight_layout()
 
+plt.imshow(draw_img)
+plt.imsave('./out_sample/search_clf_out_img.png',draw_img)
 
+plt.imsave('./out_sample/head_map.png',heatmap)
 
+draw_image = np.copy(image)
+window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
+plt.imsave('./out_sample/all_hot_windows',window_img)
 
-
-
-
-
-
-print(hot_windows)
-
-plt.imshow(window_img)
-plt.imsave('./out_sample/search_clf_out_img.png',window_img)
+print('done')
