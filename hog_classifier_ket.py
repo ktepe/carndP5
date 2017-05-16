@@ -1,39 +1,51 @@
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+
 import numpy as np
-import pickle
-import cv2
 import glob
 import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from lesson_functions import *
+import pickle
 
+from lesson_functions import get_hog_features, extract_features
+
+
+# Define a function to extract features from a list of images
+# Have this function call bin_spatial() and color_hist()
+
+
+# Divide up into cars and notcars
 debug_prt=1
+car_images = glob.glob('./vehicles/**/*.png')
+cars = []
+notcar_images=glob.glob('./non-vehicles/**/*.png')
+notcars = []
 
-'''
-dist_pickle = pickle.load(open("svc_pickle.p", "rb"))
-svc = dist_pickle["svc"]
-X_scaler = dist_pickle["scaler"]
-orient = dist_pickle["orient"]
-pix_per_cell = dist_pickle["pix_per_cell"]
-cell_per_block = dist_pickle["cell_per_block"]
-spatial_size = dist_pickle["spatial_size"]
-hist_bins = dist_pickle["hist_bins"]
-'''
-img = mpimg.imread('./sample/bbox-example-image.jpg')
+for image in car_images:
+        cars.append(image)
 
-cars=get_image_paths('./vehicles_smallset/cars1_2_3/*.jpeg')
-notcars=get_image_paths('./non-vehicles_smallset/notcars1_2_3/*.jpeg')
+for image in notcar_images:
+        notcars.append(image)
 
+if debug_prt:
+    print('cars len', len(cars), 'not-cars len', len(notcars))
+    print(cars[0])
+    print(notcars[0])
 
-### TODO: Tweak these parameters and see how the results change.
+### Tweak these parameters and see how the results change.
 colorspace = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9
 pix_per_cell = 8
-cell_per_block = 2
+cell_per_block = 1
 hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+
+# pickle the feature parameters
+feature_params={'color_space': "RGB", 'orient': orient, 'pix_per_cell': pix_per_cell,
+            'cell_per_block': cell_per_block, 'hog_channel': "ALL"}
+pickle.dump(feature_params, open('feature_params.p', 'wb'))
+# end of pickling
 
 t=time.time()
 car_features = extract_features(cars, color_space=colorspace, orient=orient,
@@ -71,23 +83,13 @@ svc.fit(X_train, y_train)
 t2 = time.time()
 print(round(t2-t, 2), 'Seconds to train SVC...')
 # Check the score of the SVC
-
-
-ystart = 400
-ystop = 720
-scale = 1.5
-
-xscaler=StandardScaler(copy=True, with_mean=True, with_std=True)
-orient=9
-pix_per_cel=8
-cell_per_block==1
-#spatial_size=(64,64)
-spatial_size=(32,32)
-
-hist_bins= 32
-
-
-out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                    hist_bins)
-
-plt.imsave('./out_sample/p5_out_img.png',out_img)
+print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+# Check the prediction time for a single sample
+t=time.time()
+n_predict = 10
+print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+t2 = time.time()
+print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+#pickle 
+pickle.dump(svc, open('svc_model.p', 'wb'))
