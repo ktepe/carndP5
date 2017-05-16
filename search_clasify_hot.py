@@ -177,20 +177,23 @@ print('Using:', orient, 'orientations', pix_per_cell,
       'pixels per cell and', cell_per_block, 'cells per block')
 print('Feature vector length:', len(X_train[0]))
 # Use a linear SVC
+train_it=0
 
-svc = LinearSVC()
-# Check the training time for the SVC
-t = time.time()
-svc.fit(X_train, y_train)
-t2 = time.time()
-print(round(t2 - t, 2), 'Seconds to train SVC...')
-save_classifier (svc, file_='classifier_model.p')
+if train_it:
+    svc = LinearSVC()
+    # Check the training time for the SVC
+    # t = time.time()
+    svc.fit(X_train, y_train)
+    t2 = time.time()
+    print(round(t2 - t, 2), 'Seconds to train SVC...')
+    save_classifier (svc, file_='classifier_model.p')
 
-# Check the score of the SVC
-print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
-# Check the prediction time for a single sample
-t = time.time()
+    # Check the score of the SVC
+    print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+    # Check the prediction time for a single sample
+    t = time.time()
 #finish training
+
 image = mpimg.imread('./sample/bbox-example-image.jpg')
 
 # Uncomment the following line if you extracted training
@@ -227,7 +230,7 @@ heat = np.zeros_like(image[:, :, 0]).astype(np.float)
 heat = add_heat(heat, box_list)
 
 # Apply threshold to help remove false positives
-heat = apply_threshold(heat, 1)
+heat = apply_threshold(heat, 5)
 
 # Visualize the heatmap when displaying
 heatmap = np.clip(heat, 0, 255)
