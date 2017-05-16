@@ -7,8 +7,9 @@ import time
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-import pickle
+from sklearn.externals import joblib
 
+import pickle
 from lesson_functions import get_hog_features, extract_features
 
 
@@ -91,5 +92,19 @@ print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
 print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
-#pickle 
-pickle.dump(svc, open('svc_model.p', 'wb'))
+#pickle
+
+joblib.dump(svc, 'svc_model.p')
+#pickle.dump(svc, open('svc_model.p', 'wb'))
+
+svc2=joblib.load('svc_model.p')
+
+print('Test Accuracy of loaded SVC = ', round(svc2.score(X_test, y_test), 4))
+# Check the prediction time for a single sample
+t=time.time()
+n_predict = 10
+print('My SVC load predicts: ', svc2.predict(X_test[0:n_predict]))
+print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+t2 = time.time()
+print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+#pickle
