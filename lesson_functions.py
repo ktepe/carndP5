@@ -5,6 +5,7 @@ import pickle
 import glob
 import os
 from skimage.feature import hog
+from sklearn.preprocessing import StandardScaler
 
 def convert_color(img, conv='RGB2YCrCb'):
     if conv == 'RGB2YCrCb':
@@ -173,7 +174,11 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
 
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
-def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
+def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                  hist_bins):
+#def find_cars(img, ystart, ystop, scale, svc, orient, pix_per_cell, cell_per_block, spatial_size,
+#                      hist_bins):
+
     draw_img = np.copy(img)
     img = img.astype(np.float32) / 255
 
@@ -203,6 +208,8 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
+    #kemal tepe
+    hot_boxes=[]
 
     for xb in range(nxsteps):
         for yb in range(nysteps):
@@ -223,7 +230,9 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
             # Get color features
             spatial_features = bin_spatial(subimg, size=spatial_size)
             hist_features = color_hist(subimg, nbins=hist_bins)
-
+            # kemal tepe
+            # X_scaler = StandardScaler()
+            #X_scaler = StandardScaler().fit(np.hstack((spatial_features, hist_features, hog_features)))
             # Scale features and make a prediction
             test_features = X_scaler.transform(
                 np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1))
@@ -234,10 +243,13 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
+                hot_boxes.append(((xbox_left, ytop_draw + ystart),
+                              (xbox_left + win_draw, ytop_draw + win_draw + ystart)))
                 cv2.rectangle(draw_img, (xbox_left, ytop_draw + ystart),
                               (xbox_left + win_draw, ytop_draw + win_draw + ystart), (0, 0, 255), 6)
 
-    return draw_img
+
+    return draw_img, hot_boxes
 
 def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
                         hist_bins=32, orient=9,

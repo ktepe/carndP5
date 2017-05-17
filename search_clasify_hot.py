@@ -132,13 +132,9 @@ plt.imshow(heatmap, cmap='hot')
 plt.title('Heat Map')
 fig.tight_layout()
 
-plt.imshow(draw_img)
 plt.imsave('./out_sample/search_clf_out_img64.png',draw_img)
 
 plt.imsave('./out_sample/head_map64.png',heatmap)
 
-draw_image = np.copy(image)
-window_img = draw_boxes(draw_image, hot_windows, color=(0, 0, 255), thick=6)
-plt.imsave('./out_sample/all_hot_windows64.png',window_img)
 
 print('done')

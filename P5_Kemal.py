@@ -36,20 +36,18 @@ hog_feat=feature_params["hog_feat"]
 #parameters are obtained
 img = mpimg.imread('./sample/bbox-example-image.jpg')
 
-# Check the score of the SVC
-svc2=joblib.load('svc_model2.p')
-X_scaler=joblib.load('X_scaler_model2.p')
 
 ystart = 400
 ystop = 720
 scale = 1.5
 
 # Fit a per-column scaler
-X_scaler = StandardScaler().fit(X)
-# Apply the scaler to X
-scaled_X = X_scaler.transform(X)
+X_scaler = StandardScaler()
 
-out_img = find_cars(img, ystart, ystop, scale, svc2, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                    hist_bins)
+
+#out_img = find_cars(img, ystart, ystop, scale, svc2, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+#                    hist_bins)
+
+#out_img = find_cars(img, ystart, ystop, scale, svc2,  orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
 
 plt.imsave('./out_sample/p5_out_img.png',out_img)
