@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 from scipy.ndimage.measurements import label
+from moviepy.editor import VideoFileClip
 
 import pickle
 from lesson_functions import *
@@ -142,57 +143,41 @@ print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 img = mpimg.imread('./sample/bbox-example-image.jpg')
 
 
-ystart = 440
-ystop = 680
-scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
 
-box_list=[]
-
-for scale in scales:
-    out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                    hist_bins)
+def frame_process(img):
+    ystart = 440
+    ystop = 680
+    scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
+    box_list = []
+    for scale in scales:
+        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                                       hist_bins)
     #transfer hot boxes to the box_list for heat map
-    for box_ in hot_boxes:
-        box_list.append(box_)
+        for box_ in hot_boxes:
+            box_list.append(box_)
 
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    # Add heat to each box in box list
+    heat = add_heat(heat, box_list)
+    # Apply threshold to help remove false positives
+    heat = apply_threshold(heat, 15)
+    # Visualize the heatmap when displaying
+    heatmap = np.clip(heat, 0, 255)
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
-#out_img = find_cars(img, ystart, ystop, scale, svc2,  orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
+    return draw_img
 
-plt.imsave('./out_sample/p5_out_img.png',out_img)
+output_video='P4_ket_out.mp4'
 
+if debug_prt:
+    clip1=VideoFileClip("project_video.mp4").subclip(0,2)
+else:
+    clip1=VideoFileClip("project_video.mp4")
 
-heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-# Add heat to each box in box list
-heat = add_heat(heat, box_list)
-
-print('heat parameters', heat.max())
-
-# Apply threshold to help remove false positives
-heat = apply_threshold(heat, 15)
-
-# Visualize the heatmap when displaying
-heatmap = np.clip(heat, 0, 255)
-
-print('heat map information', heatmap.max(), heatmap.mean())
-
-# Find final boxes from heatmap using label function
-labels = label(heatmap)
-draw_img = draw_labeled_bboxes(np.copy(img), labels)
-
-fig = plt.figure()
-plt.subplot(121)
-plt.imshow(draw_img)
-plt.title('Car Positions')
-plt.subplot(122)
-plt.imshow(heatmap, cmap='hot')
-plt.title('Heat Map')
-fig.tight_layout()
-
-plt.imshow(draw_img)
-plt.imsave('./out_sample/search_clf_out_img64.png',draw_img)
-
-plt.imsave('./out_sample/head_map64.png',heatmap)
-
+out_clip=clip1.fl_image(frame_process)
+out_clip.write_videofile(output_video, audio=False)
 
 print('done')
 
