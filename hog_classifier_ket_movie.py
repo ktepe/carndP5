@@ -146,8 +146,8 @@ img = mpimg.imread('./sample/bbox-example-image.jpg')
 
 
 def frame_process(img):
-    ystart = 440
-    ystop = 680
+    ystart = 444
+    ystop = 700
     #scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
     scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
     box_list = []
@@ -162,7 +162,7 @@ def frame_process(img):
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 18)
+    heat = apply_threshold(heat, 9)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
@@ -171,10 +171,10 @@ def frame_process(img):
 
     return draw_img
 
-output_video='P4_ket_out.mp4'
+output_video='P4_ket_out2.mp4'
 
 if debug_prt:
-    clip1=VideoFileClip("project_video.mp4").subclip(0,2)
+    clip1=VideoFileClip("project_video.mp4").subclip(0,6)
 else:
     clip1=VideoFileClip("project_video.mp4")
 

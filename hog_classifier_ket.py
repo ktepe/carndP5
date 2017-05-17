@@ -142,8 +142,9 @@ print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 img = mpimg.imread('./sample/bbox-example-image.jpg')
 
 
-ystart = 440
-ystop = 680
+ystart = 444
+ystop = 700
+
 scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
 
 box_list=[]
