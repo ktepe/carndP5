@@ -15,8 +15,8 @@ import pickle
 from lesson_functions import *
 
 # Divide up into cars and notcars
-debug_prt=1
-model_file='svc_model.p'
+debug_prt=0
+model_file='svc_model_cp1.p'
 
 car_images = glob.glob('./vehicles/**/*.png')
 cars = []
@@ -46,9 +46,10 @@ if debug_prt:
 ### Tweak these parameters and see how the results change.
 #color_space = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 9
+orient = 8
 pix_per_cell = 8
-cell_per_block = 2
+#cell_per_block = 2
+cell_per_block = 1
 hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
 spatial_size = (32, 32)  # Spatial binning dimensions
 hist_bins = 32  # Number of histogram bins
@@ -147,7 +148,8 @@ img = mpimg.imread('./sample/bbox-example-image.jpg')
 def frame_process(img):
     ystart = 440
     ystop = 680
-    scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
+    #scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
+    scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
     box_list = []
     for scale in scales:
         out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
@@ -160,7 +162,7 @@ def frame_process(img):
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 15)
+    heat = apply_threshold(heat, 18)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
