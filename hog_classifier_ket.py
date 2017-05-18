@@ -9,13 +9,14 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
 from scipy.ndimage.measurements import label
+from moviepy.editor import VideoFileClip
 
 import pickle
 from lesson_functions import *
 
 # Divide up into cars and notcars
-debug_prt=1
-model_file='svc_model.p'
+debug_prt=0
+model_file='svc_model_cp1.p'
 
 car_images = glob.glob('./vehicles/**/*.png')
 cars = []
@@ -47,7 +48,8 @@ if debug_prt:
 color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9
 pix_per_cell = 8
-cell_per_block = 2
+#cell_per_block = 2
+cell_per_block = 1
 hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
 spatial_size = (32, 32)  # Spatial binning dimensions
 hist_bins = 32  # Number of histogram bins
@@ -119,6 +121,7 @@ if (os.path.isfile(model_file))==False:
     print('For these',n_predict, 'labels: ', y_test[0:n_predict])
     t2 = time.time()
     print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+    print('Test Accuracy of loaded SVC = ', round(svc.score(X_test, y_test), 4))
     #pickle the model
     joblib.dump(svc, model_file)
     #joblib.dump(X_scaler, 'X_scaler_model2.p')
@@ -139,61 +142,44 @@ print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
-img = mpimg.imread('./sample/bbox-example-image.jpg')
 
 
-ystart = 444
-ystop = 700
 
-scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
 
-box_list=[]
-
-for scale in scales:
-    out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
-                    hist_bins)
+def frame_process(img):
+    ystart = 400
+    ystop = 680
+    scales = [1, 1.5, 1.8, 2]
+    #scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
+    prt_here=1
+    box_list = []
+    for scale in scales:
+        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                                       hist_bins)
     #transfer hot boxes to the box_list for heat map
-    for box_ in hot_boxes:
-        box_list.append(box_)
+        for box_ in hot_boxes:
+            box_list.append(box_)
 
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    # Add heat to each box in box list
+    heat = add_heat(heat, box_list)
+    # Apply threshold to help remove false positives
+    if prt_here:
+        print('maximum heat', heat.max(), heat.shape)
+    heat = apply_threshold(heat, 7)
+    # Visualize the heatmap when displaying
+    heatmap = np.clip(heat, 0, 255)
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
-#out_img = find_cars(img, ystart, ystop, scale, svc2,  orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
+    return draw_img, heatmap, box_list
 
-plt.imsave('./out_sample/p5_out_img.png',out_img)
+#    img = mpimg.imread('./sample/bbox-example-image.jpg')
+img = mpimg.imread('./sample/test6.jpg')
 
-
-heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-# Add heat to each box in box list
-heat = add_heat(heat, box_list)
-
-print('heat parameters', heat.max())
-
-# Apply threshold to help remove false positives
-heat = apply_threshold(heat, 15)
-
-# Visualize the heatmap when displaying
-heatmap = np.clip(heat, 0, 255)
-
-print('heat map information', heatmap.max(), heatmap.mean())
-
-# Find final boxes from heatmap using label function
-labels = label(heatmap)
-draw_img = draw_labeled_bboxes(np.copy(img), labels)
-
-fig = plt.figure()
-plt.subplot(121)
-plt.imshow(draw_img)
-plt.title('Car Positions')
-plt.subplot(122)
-plt.imshow(heatmap, cmap='hot')
-plt.title('Heat Map')
-fig.tight_layout()
-
-plt.imshow(draw_img)
-plt.imsave('./out_sample/search_clf_out_img64.png',draw_img)
-
-plt.imsave('./out_sample/head_map64.png',heatmap)
-
-
+output_image, heatmap, box_list=frame_process(img)
+plt.imsave('./out_sample/search_clf_out_img64_test6.png',output_image)
+plt.imsave('./out_sample/heat_map64_test6.png',heatmap)
 print('done')
 

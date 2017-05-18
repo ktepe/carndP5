@@ -46,7 +46,7 @@ if debug_prt:
 ### Tweak these parameters and see how the results change.
 #color_space = 'RGB' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
-orient = 8
+orient = 9
 pix_per_cell = 8
 #cell_per_block = 2
 cell_per_block = 1
@@ -143,14 +143,17 @@ print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
 img = mpimg.imread('./sample/bbox-example-image.jpg')
 
-
+#smoothing
+heat_filter=0
 
 def frame_process(img):
-    ystart = 444
-    ystop = 700
-    #scales = [0.3, 0.5, 0.7, 1.0, 1.2, 1.3, 1.5, 2, 2.5]
-    scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
+    ystart = 400
+    ystop = 680
+#    scales = [1.0, 1.5, 1.8, 2] #works good
+    scales = [1.0, 1.25, 1.5, 1.8, 2]
+    #scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
     box_list = []
+    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
         out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
                                        hist_bins)
@@ -162,24 +165,36 @@ def frame_process(img):
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 9)
+    # 7 works good
+    heat = apply_threshold(heat, 5)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
+
+
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
     draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
     return draw_img
 
-output_video='P4_ket_out2.mp4'
+movie_mode=1
+debug_movie=0
 
-if debug_prt:
-    clip1=VideoFileClip("project_video.mp4").subclip(0,6)
-else:
-    clip1=VideoFileClip("project_video.mp4")
+if movie_mode:
+    output_video = 'P4_ket_out2.mp4'
+    if debug_movie:
+        clip1=VideoFileClip("project_video.mp4").subclip(20, 32)
+    else:
+        clip1=VideoFileClip("project_video.mp4")
 
-out_clip=clip1.fl_image(frame_process)
-out_clip.write_videofile(output_video, audio=False)
+    out_clip=clip1.fl_image(frame_process)
+    out_clip.write_videofile(output_video, audio=False)
 
+if movie_mode==0:
+#    img = mpimg.imread('./sample/bbox-example-image.jpg')
+    img = mpimg.imread('./sample/test6.jpg')
+    output_image=frame_process(img)
+    plt.imsave('./out_sample/search_clf_out_img64_test6.png',output_image)
+    #plt.imsave('./out_sample/head_map64.png',heatmap)
 print('done')
 
