@@ -16,35 +16,43 @@ In this project, a linear SVM based classifier is used to identify and clasift s
 
 * Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
 
-* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+* Run your pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 
-* Estimate a bounding box for vehicles detected.
+* Discuss future enhancements.
 
 ### 1. Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
 
-In order to utilize machine learning (ML) methods, we need a well organized data det. We have obtained this through the resouces section of the project. The data set used in this part of the project includes 
+In order to utilize machine learning (ML) methods, we need a well organized data det. We have obtained this through the resouces section of the project. The data set used in this part of the project includes [GTI vehicle image database]( http://www.gti.ssr.upm.es/data/Vehicle_database.html). The set roughly equal number of vehicle and non-vehicle images of 8,000 images in each bins with 64x64 pixel of each image. Some samples are provided below.
+![alt text][./sample/2.png] *non-vehicle*
+![alt text][./sample/25.png] *vehicle*
 
 
-Explain how (and identify where in your code) you extracted HOG features from the training images.
+HOG features are extracted from the training images by using functions provided by `skimage.hog()` which was the main function in ```lecture_functions.py``` provided by Udacity, the function API is
+```python
+features = hog(img, orientations=orient,
+                       pixels_per_cell=(pix_per_cell, pix_per_cell),
+                       cells_per_block=(cell_per_block, cell_per_block), block_norm='L2-Hys',
+                       transform_sqrt=True,
+                       visualise=vis, feature_vector=feature_vec)
+```
 
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+Tuning and identifying right combination of parameters in to obtain the features were important. I have used the following parameters in my feature extraction:
+```python
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 9
+pix_per_cell = 8
+#cell_per_block = 2
+cell_per_block = 1
+hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+spatial_size = (32, 32)  # Spatial binning dimensions
+hist_bins = 32  # Number of histogram bins
+spatial_feat = True  # Spatial features on or off
+hist_feat = True  # Histogram features on or off
+hog_feat = True  # HOG features on or off
+```
 
-I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
-
-![alt text][image1]
-
-I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
-
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
-
-####2. Explain how you settled on your final choice of HOG parameters.
-
-I tried various combinations of parameters and...
-
-![alt text][image2]
-
-2. Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. Normalization of features and randomization of  the selection for training and testing.
-
+**Explain how you settled on your final choice of HOG parameters**.
+In the final clasification, `color_space`, and `cell_per_block` parameters were important also including all the channels in `hog_channels`. I experimented with **RGB** color space as well s cell per block of 1 but testing accucary was 2-3% higher with **YCrCb** color space and cell per block of 1. Orientation I kept at 9, 8 worked fine too. My observations were also varified by few blogs that I read such as by [Arnoldo Guzzi](https://chatbotslife.com/vehicle-detection-and-tracking-using-computer-vision-baea4df65906). This blog's author did extensive testing in these parameters. Although he suggests orientation of 8, my classifier worked with orientation of 9 better. 
 
 ### 2. Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
 
