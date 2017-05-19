@@ -13,22 +13,157 @@ In this project, a linear SVM based classifier is used to identify and clasift s
 ### The goals / steps of this project are the following:
 
 * Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
-* Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. 
-* Note: for those first two steps don't forget to normalize your features and randomize a selection for training and testing.
+
 * Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
-* Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
-* Estimate a bounding box for vehicles detected.
+
+* Run your pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+
+* Discuss future enhancements.
 
 ### 1. Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
 
+In order to utilize machine learning (ML) methods, we need a well organized data det. We have obtained this through the resouces section of the project. The data set used in this part of the project includes [GTI vehicle image database]( http://www.gti.ssr.upm.es/data/Vehicle_database.html). The set roughly equal number of vehicle and non-vehicle images of 8,000 images in each bins with 64x64 pixel of each image. Some samples are provided below.
 
-### 2. Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. Normalization of features and randomization of  the selection for training and testing.
+![alt text](./sample/2.png) *non-vehicle*
+![alt text](./sample/25.png) *vehicle*
 
-### 3. Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
 
-### 4. Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+HOG features are extracted from the training images by using functions provided by `skimage.hog()` which was the main function in ```lecture_functions.py``` provided by Udacity, the function API is
+```python
+features = hog(img, orientations=orient,
+                       pixels_per_cell=(pix_per_cell, pix_per_cell),
+                       cells_per_block=(cell_per_block, cell_per_block), block_norm='L2-Hys',
+                       transform_sqrt=True,
+                       visualise=vis, feature_vector=feature_vec)
+```
 
-### 5. Estimate a bounding box for vehicles detected.
+Tuning and identifying right combination of parameters in to obtain the features were important. I have used the following parameters in my feature extraction:
+```python
+color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
+orient = 9
+pix_per_cell = 8
+#cell_per_block = 2
+cell_per_block = 1
+hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
+spatial_size = (32, 32)  # Spatial binning dimensions
+hist_bins = 32  # Number of histogram bins
+spatial_feat = True  # Spatial features on or off
+hist_feat = True  # Histogram features on or off
+hog_feat = True  # HOG features on or off
+```
+
+**Explain how you settled on your final choice of HOG parameters**.
+In the final clasification, `color_space`, and `cell_per_block` parameters were important also including all the channels in `hog_channels`. I experimented with **RGB** color space as well s cell per block of 1 but testing accucary was 2-3% higher with **YCrCb** color space and cell per block of 1. Orientation I kept at 9, 8 worked fine too. My observations were also varified by few blogs that I read such as by [Arnoldo Guzzi](https://chatbotslife.com/vehicle-detection-and-tracking-using-computer-vision-baea4df65906). This blog's author did extensive testing in these parameters. Although he suggests orientation of 8, my classifier worked with orientation of 9 better. 
+
+### 2. Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
+
+**Training classifier**
+
+After extracting HOG features, a linear SVM is trained to obtain the classifier model. The code which generates the classifier is given below:
+```python
+if (os.path.isfile(model_file))==False:
+    print('model file is not found, moving to training mode')
+    svc = LinearSVC()
+    # Check the training time for the SVC
+    t=time.time()
+    svc.fit(X_train, y_train)
+    t2 = time.time()
+    print(round(t2-t, 2), 'Seconds to train SVC...')
+    #  Check the score of the SVC
+    # print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+    #  Check the prediction time for a single sample
+    t=time.time()
+    n_predict = 10
+    print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+    print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+    t2 = time.time()
+    print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+    #pickle the model
+    joblib.dump(svc, model_file)
+    #joblib.dump(X_scaler, 'X_scaler_model2.p')
+    # #pickle.dump(svc, open('svc_model.p', 'wb'))
+else:
+    print('using the stored model file', model_file)
+    svc=joblib.load(model_file)
+# technically this is done
+```
+Trained model is saved to a file to be used in the future. This also allowed to reduce the testing the images, and video in various runs. Before the training scaling has been done with StandardScaler().
+
+**Sliding Window Search**
+
+The sliding window search was essential to comb the video frames to find the vehicles. The primary function to perform this sliding windows approach is
+
+```python
+scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
+box_list = []
+for scale in scales:
+  out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,      spatial_size, hist_bins)
+```
+```find_cars``` function searches entire img file with 50% overlap with different images scales. Scale of 1 constitutes 64x64 pixel window. I have tried variaty of slaces however scales less than 1 did not help. So I settled on window scales of 
+```scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]```. When sliding window method searches each box for a vehicle and if the window has a vehicle by using classifier, retains this box as hot. After all the scales are searches then the hot boxes are provided to heat map methods to eliminate false positives. The pipeline for the entire provess is defined in ```frame_process``` function. The pipeline of the python code is provided below:
+
+```python
+#smoothing
+sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
+smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+
+def frame_process(img):
+    global smooth_filter
+    ystart = 400
+    ystop = 680
+    #scales = [1.0, 1.5, 1.8, 2] #works good
+    #below is final
+    scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
+    box_list = []
+    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
+    for scale in scales:
+        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                                       hist_bins)
+    #transfer hot boxes to the box_list for heat map
+        for box_ in hot_boxes:
+            box_list.append(box_)
+
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+
+    # Add heat to each box in box list
+    heat = add_heat(heat, box_list)
+    # Apply threshold to help remove false positives
+    # 7 works good
+    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    heat=0.3*heat+0.7*smooth_filter
+    smooth_filter=heat
+    #"{0:.2f}".format(a)
+    #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
+    heat_thr=5
+    if debug_prt:
+        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+              "{0:.2f}".format(np.sqrt(heat.var())),
+              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+    #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
+    heat = apply_threshold(heat, heat_thr)
+    # Visualize the heatmap when displaying
+    heatmap = np.clip(heat, 0, 255)
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    draw_img = draw_labeled_bboxes(np.copy(img), labels)
+
+    return draw_img
+
+```
+
+
+
+####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
+
+Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
+
+![alt text][image4]
+---
+
+### 3. Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+
+### 4. Estimate a bounding box for vehicles detected.
 
 
 [//]: # (Image References)
@@ -41,55 +176,8 @@ In this project, a linear SVM based classifier is used to identify and clasift s
 [image7]: ./examples/output_bboxes.png
 [video1]: ./project_video.mp4
 
-## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
-###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
-
----
-###Writeup / README
-
-####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  [Here](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) is a template writeup for this project you can use as a guide and a starting point.  
-
-You're reading it!
-
-###Histogram of Oriented Gradients (HOG)
-
-####1. Explain how (and identify where in your code) you extracted HOG features from the training images.
-
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
-
-I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
-
-![alt text][image1]
-
-I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
-
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
 
 
-![alt text][image2]
-
-####2. Explain how you settled on your final choice of HOG parameters.
-
-I tried various combinations of parameters and...
-
-####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
-
-I trained a linear SVM using...
-
-###Sliding Window Search
-
-####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
-
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
-
-![alt text][image3]
-
-####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
-
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
-
-![alt text][image4]
----
 
 ### Video Implementation
 
@@ -122,4 +210,10 @@ Here's an example result showing the heatmap from a series of frames of video, t
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+
+
+
+## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
+###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
+
 
