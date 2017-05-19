@@ -10,7 +10,7 @@
 
 In this project, a linear SVM based classifier is used to identify and clasift surroundung vehicles in video captured during driving conditions. In order to achieve the project objectives, the calssifier is trained by using nearly 16,000 images of cars and non-cars, which is roughly equally distributed. The classifier trained by using image features such as color shpace and histogram oriented gradient (HOG). After obtaining classifier model, the video frames are searched for possible vehicles. In this process, patch of images from the video frames are processed and fed in to the classifier for predictions.If the clasifier identifies a vehicle in a particular path (window), this patch is labed as HOT. The the hot windows are used to geenrate heat map to remove the false positives where classiffy identifies non-vehicle objects and vehicles.  Another method to mitigate the false positives is to use smoothing filter, where we used consecutive heat maps by using  a moving aveage type smoothing filter. The califier yielts roughly 96% accuracy in the test set. The classifier worked well in most of the cases where occasionally identified very close proximity wehicles are one, and some side rails as vehicle. A better training set, such as pictures with more railing can train the model better to eliminate these false positives. Overall, the detection and classification woks well in this problem but enahncement and improvements are possible, as well as optimizations. For example, the feature set can be reduced to speed up the processing without sacrificing the accuracy.
 
-The goals / steps of this project are the following:
+### The goals / steps of this project are the following:
 
 * Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
 * Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. 
@@ -18,6 +18,18 @@ The goals / steps of this project are the following:
 * Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
+
+### 1. Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
+
+
+### 2. Optionally, you can also apply a color transform and append binned color features, as well as histograms of color, to your HOG feature vector. Normalization of features and randomization of  the selection for training and testing.
+
+### 3. Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
+
+### 4. Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+
+### 5. Estimate a bounding box for vehicles detected.
+
 
 [//]: # (Image References)
 [image1]: ./examples/car_not_car.png
