@@ -150,11 +150,10 @@ smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
 
 def frame_process(img):
     global smooth_filter
-    ystart = 420
+    ystart = 400
     ystop = 680
-#    scales = [1.0, 1.5, 1.8, 2] #works good
-    scales = [1.0, 1.25, 1.5, 1.8, 2]
-    #scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
+    #scales = [1.0, 1.5, 1.8, 2] #works good
+    scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
     box_list = []
     heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
@@ -170,14 +169,21 @@ def frame_process(img):
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
     # 7 works good
-    new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-    new_heat=0.3*heat+0.7*smooth_filter
-    smooth_filter=new_heat
-    heat = apply_threshold(new_heat, 4)
+    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    heat=0.3*heat+0.7*smooth_filter
+    smooth_filter=heat
+    #"{0:.2f}".format(a)
+    #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
+    heat_thr=5
+    if debug_prt:
+        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+              "{0:.2f}".format(np.sqrt(heat.var())),
+              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+    #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
+    heat = apply_threshold(heat, heat_thr)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
-
-
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
     draw_img = draw_labeled_bboxes(np.copy(img), labels)
@@ -188,10 +194,12 @@ movie_mode=1
 debug_movie=0
 
 if movie_mode:
-    output_video = 'P4_ket_out2.mp4'
+
     if debug_movie:
+        output_video = 'P5_ket_out_dbg_clip.mp4'
         clip1=VideoFileClip("project_video.mp4").subclip(20, 32)
     else:
+        output_video = 'P5_ket_out_full.mp4'
         clip1=VideoFileClip("project_video.mp4")
 
     out_clip=clip1.fl_image(frame_process)
