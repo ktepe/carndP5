@@ -8,6 +8,7 @@ from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.externals import joblib
+from sklearn.utils import shuffle
 from scipy.ndimage.measurements import label
 from moviepy.editor import VideoFileClip
 
@@ -29,14 +30,15 @@ for image in car_images:
 for image in notcar_images:
         notcars.append(image)
 
+cars= shuffle(cars)
+notcars= shuffle(notcars)
+
 if (os.path.isfile(model_file))==True:
     #no need to retrain and extract all hog features
     # just to adjust the scaler
     sample_size=500
     cars=cars[:sample_size]
     notcars=notcars[:sample_size]
-
-
 
 if debug_prt:
     print('cars len', len(cars), 'not-cars len', len(notcars))
@@ -141,13 +143,14 @@ print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
-img = mpimg.imread('./sample/bbox-example-image.jpg')
 
 #smoothing
-heat_filter=0
+sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
+smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
 
 def frame_process(img):
-    ystart = 400
+    global smooth_filter
+    ystart = 420
     ystop = 680
 #    scales = [1.0, 1.5, 1.8, 2] #works good
     scales = [1.0, 1.25, 1.5, 1.8, 2]
@@ -162,11 +165,15 @@ def frame_process(img):
             box_list.append(box_)
 
     heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
     # 7 works good
-    heat = apply_threshold(heat, 5)
+    new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    new_heat=0.3*heat+0.7*smooth_filter
+    smooth_filter=new_heat
+    heat = apply_threshold(new_heat, 4)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
 
