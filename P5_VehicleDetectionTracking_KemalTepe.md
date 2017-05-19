@@ -152,18 +152,20 @@ def frame_process(img):
 
 ```
 
+The pipeline was tested with number of different test images, and below samples  show different stages of the pipeline.
 
+![alt text][./sample/image4.png]*Vehicles in the image in raw form where all the hot boxes are shown.*
+![alt text][./sample/image4.png]*Vehicles in the image after heat map tresholding to reduce the number of false positives*
+![alt text][./sample/image4.png]*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives.*
 
-####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
-
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
-
-![alt text][image4]
----
 
 ### 3. Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 
-### 4. Estimate a bounding box for vehicles detected.
+While pipeline was used in the video processing, a smoothing filter was employed. 
+
+
+### 4. Discussions and Future Work
+
 
 
 [//]: # (Image References)
