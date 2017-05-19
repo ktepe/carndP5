@@ -1,4 +1,10 @@
 # Vehicle Detection
+## Kemal Tepe ketepe@gmail.com
+
+The implementation details of this project is provided in [report](./P5_VehicleDetectionClasification_KemalTepe.md). Rest of the document is same as the originally provided by the Udacity.
+
+
+# Vehicle Detection
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
 
