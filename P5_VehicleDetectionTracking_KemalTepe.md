@@ -23,8 +23,9 @@ In this project, a linear SVM based classifier is used to identify and clasift s
 ### 1. Perform a Histogram of Oriented Gradients (HOG) feature extraction on a labeled training set of images and train a classifier Linear SVM classifier
 
 In order to utilize machine learning (ML) methods, we need a well organized data det. We have obtained this through the resouces section of the project. The data set used in this part of the project includes [GTI vehicle image database]( http://www.gti.ssr.upm.es/data/Vehicle_database.html). The set roughly equal number of vehicle and non-vehicle images of 8,000 images in each bins with 64x64 pixel of each image. Some samples are provided below.
-![alt text][./sample/2.png] *non-vehicle*
-![alt text][./sample/25.png] *vehicle*
+
+![alt text](./sample/2.png) *non-vehicle*
+![alt text](./sample/25.png) *vehicle*
 
 
 HOG features are extracted from the training images by using functions provided by `skimage.hog()` which was the main function in ```lecture_functions.py``` provided by Udacity, the function API is
@@ -56,20 +57,102 @@ In the final clasification, `color_space`, and `cell_per_block` parameters were 
 
 ### 2. Implement a sliding-window technique and use your trained classifier to search for vehicles in images.
 
+**Training classifier**
+
+After extracting HOG features, a linear SVM is trained to obtain the classifier model. The code which generates the classifier is given below:
+```python
+if (os.path.isfile(model_file))==False:
+    print('model file is not found, moving to training mode')
+    svc = LinearSVC()
+    # Check the training time for the SVC
+    t=time.time()
+    svc.fit(X_train, y_train)
+    t2 = time.time()
+    print(round(t2-t, 2), 'Seconds to train SVC...')
+    #  Check the score of the SVC
+    # print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+    #  Check the prediction time for a single sample
+    t=time.time()
+    n_predict = 10
+    print('My SVC predicts: ', svc.predict(X_test[0:n_predict]))
+    print('For these',n_predict, 'labels: ', y_test[0:n_predict])
+    t2 = time.time()
+    print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
+    #pickle the model
+    joblib.dump(svc, model_file)
+    #joblib.dump(X_scaler, 'X_scaler_model2.p')
+    # #pickle.dump(svc, open('svc_model.p', 'wb'))
+else:
+    print('using the stored model file', model_file)
+    svc=joblib.load(model_file)
+# technically this is done
+```
+Trained model is saved to a file to be used in the future. This also allowed to reduce the testing the images, and video in various runs. Before the training scaling has been done with StandardScaler().
+
+**Sliding Window Search**
+
+The sliding window search was essential to comb the video frames to find the vehicles. The primary function to perform this sliding windows approach is
+
+```python
+scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
+box_list = []
+for scale in scales:
+  out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,      spatial_size, hist_bins)
+```
+```find_cars``` function searches entire img file with 50% overlap with different images scales. Scale of 1 constitutes 64x64 pixel window. I have tried variaty of slaces however scales less than 1 did not help. So I settled on window scales of 
+```scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]```. When sliding window method searches each box for a vehicle and if the window has a vehicle by using classifier, retains this box as hot. After all the scales are searches then the hot boxes are provided to heat map methods to eliminate false positives. The pipeline for the entire provess is defined in ```frame_process``` function. The pipeline of the python code is provided below:
+
+```python
+#smoothing
+sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
+smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+
+def frame_process(img):
+    global smooth_filter
+    ystart = 400
+    ystop = 680
+    #scales = [1.0, 1.5, 1.8, 2] #works good
+    #below is final
+    scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
+    box_list = []
+    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
+    for scale in scales:
+        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+                                       hist_bins)
+    #transfer hot boxes to the box_list for heat map
+        for box_ in hot_boxes:
+            box_list.append(box_)
+
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+
+    # Add heat to each box in box list
+    heat = add_heat(heat, box_list)
+    # Apply threshold to help remove false positives
+    # 7 works good
+    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    heat=0.3*heat+0.7*smooth_filter
+    smooth_filter=heat
+    #"{0:.2f}".format(a)
+    #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
+    heat_thr=5
+    if debug_prt:
+        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+              "{0:.2f}".format(np.sqrt(heat.var())),
+              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+    #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
+    heat = apply_threshold(heat, heat_thr)
+    # Visualize the heatmap when displaying
+    heatmap = np.clip(heat, 0, 255)
+    # Find final boxes from heatmap using label function
+    labels = label(heatmap)
+    draw_img = draw_labeled_bboxes(np.copy(img), labels)
+
+    return draw_img
+
+```
 
 
-
-####3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
-
-I trained a linear SVM using...
-
-###Sliding Window Search
-
-####1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
-
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
-
-![alt text][image3]
 
 ####2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
