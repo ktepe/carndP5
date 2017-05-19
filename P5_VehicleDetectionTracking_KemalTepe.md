@@ -1,9 +1,14 @@
-##Writeup Template
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
 
----
+# **Vehicle Detection Project**
 
-**Vehicle Detection Project**
+
+## Kemal Tepe, ketepe@gmail.com
+
+### Ojective: Objective of this work is to utilize machine learning techniques to identify and calissify nearby vehicles in the driving.
+
+### Summary: 
+
+In this project, a linear SVM based classifier is used to identify and clasift surroundung vehicles in video captured during driving conditions. In order to achieve the project objectives, the calssifier is trained by using nearly 16,000 images of cars and non-cars, which is roughly equally distributed. The classifier trained by using image features such as color shpace and histogram oriented gradient (HOG). After obtaining classifier model, the video frames are searched for possible vehicles. In this process, patch of images from the video frames are processed and fed in to the classifier for predictions.If the clasifier identifies a vehicle in a particular path (window), this patch is labed as HOT. The the hot windows are used to geenrate heat map to remove the false positives where classiffy identifies non-vehicle objects adn vehciles.  
 
 The goals / steps of this project are the following:
 
