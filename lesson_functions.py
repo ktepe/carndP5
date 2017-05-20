@@ -393,40 +393,4 @@ def get_image_paths(dir_path):
 
     return out
 
-def get_calibration_parameters():
-    # get the camera calibration parameters
-    # either from the file or from image processing
-    if (os.path.isfile('P4CameraParam.p')) == True:
-        # read python dict back from the file
-        print('Reading Camera Parameters from file')
-        pickle_file = open('P4CameraParam.p', 'rb')
-        p4dict = pickle.load(pickle_file)
-        ret = p4dict['ret']
-        mtx = p4dict['mtx']
-        dist = p4dict['dist']
-        rvecs = p4dict['rvecs']
-        tvecs = p4dict['tvecs']
-        nx = p4dict['nx']
-        nx = p4dict['ny']
-        pickle_file.close()
-    else:
-        print('Camera Param file not found!!')
-        # number of corners in x and y directions
-        nx = 9
-        ny = 6
-        # read the images
-        cal_files = './camera_cal/calibration*.jpg'
-        image_files = glob.glob(cal_files)
-        # just to get image size
-        dummy_img = cv2.imread('./camera_cal/calibration1.jpg')
-        img_size = (dummy_img.shape[1], dummy_img.shape[0])
-        # get the image and object points using utility function from ket_utilityP4
-        imgpoints, objpoints = get_imagepoints_objpoints(image_files, gridsize=(nx, ny), debug_prt=0)
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size, None, None)
-        p4dict = {'ret': ret, 'mtx': mtx, 'dist': dist, 'rvecs': rvecs, 'tvecs': tvecs, 'nx': nx, 'ny': ny}
-        output = open('P4CameraParam.p', 'wb')
-
-        pickle.dump(p4dict, output)
-        output.close()
-
     return mtx, dist
