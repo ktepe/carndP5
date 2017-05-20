@@ -142,44 +142,77 @@ print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
-
-
-
-
 def frame_process(img):
+    global smooth_filter
     ystart = 400
     ystop = 680
-    scales = [1, 1.5, 1.8, 2]
-    #scales = [1.1, 1.4, 1.8, 2.4, 2.9, 3.4]
-    prt_here=1
+    #scales = [1.0, 1.5, 1.8, 2] #works good
+    scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
     box_list = []
+    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
-        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+        out_img, hot_boxes, conf_scores = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
                                        hist_bins)
     #transfer hot boxes to the box_list for heat map
-        for box_ in hot_boxes:
-            box_list.append(box_)
+        box_size_thr=20
+        for i in range(len(hot_boxes)):
+            if conf_scores[i] >= 1.5:
+                box_list.append(box_)
 
     heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
-    if prt_here:
-        print('maximum heat', heat.max(), heat.shape)
-    heat = apply_threshold(heat, 7)
+    # 7 works good
+    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+
+    #"{0:.2f}".format(a)
+    #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
+    heat_thr=4
+    if debug_prt:
+        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+              "{0:.2f}".format(np.sqrt(heat.var())),
+              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+    #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
+    heat = apply_threshold(heat, heat_thr)
     # Visualize the heatmap when displaying
+    smooth_filter = heat
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
+    #if debug_prt:
+
+    #    print('labels', labels_to_boxes(labels))
+
     draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
-    return draw_img, heatmap, box_list
+    return draw_img, heatmap, box_list, labels
 
 #    img = mpimg.imread('./sample/bbox-example-image.jpg')
 img = mpimg.imread('./sample/test6.jpg')
 
-output_image, heatmap, box_list=frame_process(img)
+output_image, heatmap, box_list, labels=frame_process(img)
 plt.imsave('./out_sample/search_clf_out_img64_test6.png',output_image)
 plt.imsave('./out_sample/heat_map64_test6.png',heatmap)
+
 print('done')
 
+#print(box_list)
+
+for box in box_list:
+    print(box)
+    print(box[0][0], box[0][1])
+
+boxes2=labels_to_boxes(labels)
+
+'''
+for box in boxes2:
+    x_size, y_size = box_size(box)
+    if debug_prt:
+        print(' boxes sizes', x_size, y_size)
+'''
+
+print(' boxes sizes', boxes2)
+print('size', box_size(boxes2))

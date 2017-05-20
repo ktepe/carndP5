@@ -210,6 +210,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
     #kemal tepe
     hot_boxes=[]
+    conf_scores=[]
 
     for xb in range(nxsteps):
         for yb in range(nysteps):
@@ -238,8 +239,9 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 np.hstack((spatial_features, hist_features, hog_features)).reshape(1, -1))
             # test_features = X_scaler.transform(np.hstack((shape_feat, hist_feat)).reshape(1, -1))
             test_prediction = svc.predict(test_features)
-
+            conf_score = svc.decision_function(test_features)
             if test_prediction == 1:
+                conf_scores.append(conf_score)
                 xbox_left = np.int(xleft * scale)
                 ytop_draw = np.int(ytop * scale)
                 win_draw = np.int(window * scale)
@@ -249,7 +251,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                               (xbox_left + win_draw, ytop_draw + win_draw + ystart), (0, 0, 255), 6)
 
 
-    return draw_img, hot_boxes
+    return draw_img, hot_boxes, conf_scores
 
 def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
                         hist_bins=32, orient=9,
@@ -359,11 +361,24 @@ def draw_labeled_bboxes(img, labels):
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
         # Draw the box on the image
-        cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+        #ket modified
+        #print('size in draw_labels', box_size(bbox))
+        x_size, y_size=box_size(bbox)
+        if x_size >32 and y_size > 32:
+            cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
     # Return the image
     return img
 
-
+def labels_to_boxes(labels):
+    for x_ in range(1, labels[1] + 1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == x_).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+    return bbox
 #
 #Kemal Tepe additions
 
@@ -393,4 +408,8 @@ def get_image_paths(dir_path):
 
     return out
 
-    return mtx, dist
+
+def box_size(box):
+    x_size=box[1][0]-box[0][0]
+    y_size=box[1][1]-box[0][1]
+    return x_size, y_size
