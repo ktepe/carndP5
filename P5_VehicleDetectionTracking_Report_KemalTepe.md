@@ -197,13 +197,9 @@ heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
 
 However this did not work as much as I unticipated in this initial trial. That is why a constant threshold value of 5 was selected after few trials. Some enhancements such as using only the searched area and little more elobative method would be used in the future to identify the heatmap threshold. This should further reduce the false positives. 
 
-The output of the pipeline with the project movie clip is given below.
+The output of the pipeline with the project movie clip is given below. There are moments that flase positives as well as false negatives, where the classifier fails to identify vehicles. However these are rare and the classifier achieves a successful identification of the vehicles.
 
 [link to challenge video result](./P5_ket_out_full.mp4) 
-
-The output heatmap video is also provided below to verify the output of the pipeline.
-
-[link to challenge video result](./P5_ket_out_full_heatmap.mp4) 
 
 
 ### 4. Discussions and Future Work
