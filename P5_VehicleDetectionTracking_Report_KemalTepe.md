@@ -209,7 +209,7 @@ However this did not work as much as I anticipated in this initial trial. That i
 
 The output of the pipeline with the project movie clip is given below. There are moments that false positives as well as false negatives, where the classifier identifies non-vehicles as vehicle and fails to identify vehicles are present. However these are rare and the classifier achieves a successful identification of the vehicles most of the time. The full video clip of the pipeline output is provided below.
 
-[link to challenge video result](./P5_ket_out_full.mp4) 
+[Link to project video result](./P5_ket_out_full.mp4) 
 
 
 ### 4. Discussions and Future Work
