@@ -159,63 +159,56 @@ The pipeline was tested with number of different test images, and below samples 
 ![alt text][./sample/image4.png]*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives.*
 
 
-### 3. Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
+### 3. Run your pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 
-While pipeline was used in the video processing, a smoothing filter was employed. 
+The pipeline provided in Section 2. is used in processing the video files to identify vehicle in the video frames. However in order to identify vehicles better as well as utilize informatin from frame to frame smoothing filter, technically a moving average filter is applied during obtaining the heat maps. Below the section of this smoothing was provided.
+
+```python
+#smoothing
+sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
+smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+
+def frame_process(img):
+    ....
+    heat = add_heat(heat, box_list)
+    # Apply threshold to help remove false positives
+    # 7 works good
+    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    heat=0.3*heat+0.7*smooth_filter
+    smooth_filter=heat
+    ....
+    return draw_img
+```
+
+The smoothing filter is a mvoing average simmilar to **X_k=a*X_current + (1-a)*X_(k-1)**, where a is less than 1.0. The smoothing significantly reduced some of the false positive detections. 
+
+I also tried to adjust the heatmap threshold by using mean and variance of the heat map distribution such as
+```
+heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
+
+```
+
+However this did not work as much as I unticipated in this initial trial. That is why a constant threshold value of 5 was selected after few trials. Some enhancements such as using only the searched area and little more elobative method would be used in the future to identify the heatmap threshold. This should further reduce the false positives. 
+
+The output of the pipeline with the project movie clip is given below.
+
+[link to challenge video result](./P5_ket_out_full.mp4) 
+
+The output heatmap video is also provided below to verify the output of the pipeline.
+
+[link to challenge video result](./P5_ket_out_full_heatmap.mp4) 
 
 
 ### 4. Discussions and Future Work
 
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+
+Overall, SVM worked well in identifying and clasifying cars and non-cars. The following problems have been faced.
+
+* Although Linear SVM was used, few other methods could be integrated simultaneously to eliminate false positivies. One of the techniques could be tree sombining search mechanism where some obvious image features could be used to eliminate non-cars from the pool.
+
+* The other problem was large number of false postives generated with highway middle raillings, which separetes the directional lanes, and roadsigns. In order to eliminate these false positivies, the classifier could be further trained by images of raillings and road-signs to better model them and identify them in the process.
 
 
-[//]: # (Image References)
-[image1]: ./examples/car_not_car.png
-[image2]: ./examples/HOG_example.jpg
-[image3]: ./examples/sliding_windows.jpg
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
-[video1]: ./project_video.mp4
-
-
-
-
-### Video Implementation
-
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
-
-
-####2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
-
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
-
----
-
-###Discussion
-
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
-
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
-
-
-
-## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
-###Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
 
 
