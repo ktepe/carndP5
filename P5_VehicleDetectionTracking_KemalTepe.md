@@ -154,9 +154,16 @@ def frame_process(img):
 
 The pipeline was tested with number of different test images, and below samples  show different stages of the pipeline.
 
-![alt text][./sample/image4.png]*Vehicles in the image in raw form where all the hot boxes are shown.*
-![alt text][./sample/image4.png]*Vehicles in the image after heat map tresholding to reduce the number of false positives*
-![alt text][./sample/image4.png]*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives.*
+![alt text][./sample/raw_boxes1.png]*Vehicles in the image in raw form where all the hot boxes are shown.*
+![alt text][./sample/heat_map1.png]*Vehicles in the image after heat map tresholding to reduce the number of false positives*
+![alt text][./sample/final1.png]*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives.*
+
+Another test image:
+
+![alt text][./sample/raw_boxes2.png]*Vehicles in the image in raw form where all the hot boxes are shown.*
+![alt text][./sample/heat_map2.png]*Vehicles in the image after heat map tresholding to reduce the number of false positives*
+![alt text][./sample/final2.png]*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives, notice the false positive at the railing.*
+
 
 
 ### 3. Run your pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
