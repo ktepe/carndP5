@@ -209,6 +209,12 @@ Overall, SVM worked well in identifying and clasifying cars and non-cars. The fo
 
 * The other problem was large number of false postives generated with highway middle raillings, which separetes the directional lanes, and roadsigns. In order to eliminate these false positivies, the classifier could be further trained by images of raillings and road-signs to better model them and identify them in the process.
 
+* The classifier can also be subject more images of vehicles to better train it to reduce false positives. I am not conviced that 8000 images is enough to capture every possible scenario also using only 64x64 pixel images may not be the best set. It is practival but not ideal case.
 
+* Although the project was about SVM classifier, I also wonder (and will probably try) how  a convolutional neural network will clasify the vehicles. We had a good success with road-sign detection. 
+
+* Also better tracking the vehicles from frame to frame also transfering some of the information back to pipeline, similar to what we have used in Advanced Line Detection project would be nise to see. This fill allow us to search boxes identified hot in the previous frame first and adjust the search algorithm to look these areas first and keep a record of these boxes would significantly improve the robustness of the detection and clasifying similar to Markov process.
+
+The project was very educational and interesting. I will keep working on this to fine tune in future. 
 
 
