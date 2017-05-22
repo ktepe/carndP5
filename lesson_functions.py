@@ -171,6 +171,14 @@ def draw_boxes(img, bboxes, color=(0, 0, 255), thick=6):
     # Return the image copy with boxes drawn
     return imcopy
 
+def draw_single_box(img, box, color=(0, 0, 255), thick=6):
+    # Make a copy of the image
+    imcopy = np.copy(img)
+    cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+    # Return the image copy with boxes drawn
+    return imcopy
+
+
 
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
@@ -363,13 +371,13 @@ def draw_labeled_bboxes(img, labels):
         # Draw the box on the image
         #ket modified
         #print('size in draw_labels', box_size(bbox))
-        x_size, y_size=box_size(bbox)
-        if x_size >32 and y_size > 32:
-            cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
+
+        cv2.rectangle(img, bbox[0], bbox[1], (0, 0, 255), 6)
     # Return the image
     return img
 
 def labels_to_boxes(labels):
+    bbox_=[]
     for x_ in range(1, labels[1] + 1):
         # Find pixels with each car_number label value
         nonzero = (labels[0] == x_).nonzero()
@@ -378,7 +386,9 @@ def labels_to_boxes(labels):
         nonzerox = np.array(nonzero[1])
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
-    return bbox
+        bbox_.append(bbox)
+
+    return bbox_
 #
 #Kemal Tepe additions
 

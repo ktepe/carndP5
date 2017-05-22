@@ -16,7 +16,7 @@ import pickle
 from lesson_functions import *
 
 # Divide up into cars and notcars
-debug_prt=0
+debug_prt=1
 model_file='svc_model_cp1.p'
 
 car_images = glob.glob('./vehicles/**/*.png')
@@ -101,7 +101,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     scaled_X, y, test_size=0.2, random_state=rand_state)
 
 print('Using:',orient,'orientations',pix_per_cell,
-    'pixels per cell and', cell_per_block,'cells per block')
+      'pixels per cell and', cell_per_block,'cells per block')
 print('Feature vector length:', len(X_train[0]))
 
 
@@ -109,7 +109,6 @@ if (os.path.isfile(model_file))==False:
     print('model file is not found, moving to training mode')
     svc = LinearSVC()
     # Check the training time for the SVC
-
     t=time.time()
     svc.fit(X_train, y_train)
     t2 = time.time()
@@ -146,9 +145,15 @@ print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 #smoothing
 sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
 smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
+asmooth_filter=np.zeros((sample_img.shape[0], sample_img.shape[1], 9)).astype(np.float)
+#print(smooth_filter.shape, sample_img.shape, asmooth_filter.shape, sample_img.shape[0])
+
+#asmooth_filter[:,:,0]=sample_img[:,:,0]
+filter_counter=0
 
 def frame_process(img):
-    global smooth_filter
+    global asmooth_filter, filter_counter
     ystart = 400
     ystop = 680
     #scales = [1.0, 1.5, 1.8, 2] #works good
@@ -161,33 +166,39 @@ def frame_process(img):
     #transfer hot boxes to the box_list for heat map
         for i in range(len(hot_boxes)):
             box_=hot_boxes[i]
-            if conf_scores[i] >= 1.001:
+            if conf_scores[i] >= 1.0:
                 box_list.append(box_)
 
     heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
     # 7 works good
     #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-    heat=0.3*heat+0.7*smooth_filter
-
+    #heat=0.3*heat+0.7*smooth_filter
+    for i in range(9):
+        heat=heat+asmooth_filter[:,:,i]
+    heat=heat/10.0
     #"{0:.2f}".format(a)
     #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
-    heat_thr=4
+    heat_thr=2
     if debug_prt:
-        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+        print('filter_conter, heat: mean, max, var, stdev', filter_counter, "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
               "{0:.2f}".format(np.sqrt(heat.var())),
-              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
-              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+              'smooth filter: mean, max, var', "{0:.2f}".format(asmooth_filter.mean()), "{0:.2f}".format(asmooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(asmooth_filter.var())), "{0:.2f}".format(heat_thr))
     #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
     heat = apply_threshold(heat, heat_thr)
     # Visualize the heatmap when displaying
-    smooth_filter = heat
+    asmooth_filter[:,:,filter_counter]=heat
+    filter_counter=(filter_counter+1)%9
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
+    boxes=labels_to_boxes(labels)
+    print(boxes)
+    #x_size, y_size = box_size(bbox)
+    #if x_size > 30 and y_size > 30:
 
     draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
@@ -199,12 +210,11 @@ debug_movie=1
 if movie_mode:
 
     if debug_movie:
-        output_video = 'P5_ket_out_dbg_new2_confint10.mp4'
-
-        #clip1=VideoFileClip("project_video.mp4").subclip(35, 43)
+        output_video = 'P5_ket_out_dbg_new2_cin10_th2.mp4'
+        #.subclip(35, 43)
         clip1 = VideoFileClip("project_video.mp4").subclip(35, 43)
     else:
-        output_video = 'P5_ket_out_full.mp4'
+        output_video = 'P5_ket_out_full_confint10_th3.mp4'
         clip1=VideoFileClip("project_video.mp4")
 
     out_clip=clip1.fl_image(frame_process)
