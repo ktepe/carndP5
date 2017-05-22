@@ -229,7 +229,9 @@ The output of the pipeline with the project movie clip is given below. There are
 
 **Response to comments made by the reviewer for this section:** Above mentioned smoothing filter that averages heat maps of 10 last frames is implemented in order to improve robustness. This suggestion by the review team was great and it worked well in the video processing.
 
-(1) Smoothing, (2) confidence score filtering, as well as (3) eliminating small hot boxes from the detections nearly eliminated all the false positivies. This is evidenced by the videos provided with earlier pipeline and new pipeline.
+(1) Smoothing, (2) confidence score filtering, as well as (3) eliminating small hot boxes from the detections nearly eliminated all the false positivies. This is evidenced by the videos provided with earlier pipeline and new pipeline. 
+
+There are few occasions the shadows generate false positives but increasing the confidence score threshold eliminated even these in my trials but this also increased true negatives. Finding this fine line threshold would require more time to test out. Also another approach which I suggested by review team as well as I thaught too is to increase number of training images from these areas to allow classifier to learn these troubled sections that they are not vehicle or identify another feature differenciates these areas and vehicles. Both I plan to investigate as my future work.
 
 
 ### 4. Discussions and Future Work
