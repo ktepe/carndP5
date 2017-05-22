@@ -105,7 +105,8 @@ The sliding window search was essential to comb the video frames to find the veh
 scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
 box_list = []
 for scale in scales:
-  out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block,      spatial_size, hist_bins)
+        out_img, hot_boxes, conf_scores = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+
 ```
 
 ```find_cars``` function searches entire image file with 50% overlap with different window scales. Window scale of one constitutes 64x64 pixel window. I have tried variety of scales however scales less than 1 did not help to identify vehicles. So I settled on window scales of 
@@ -117,50 +118,60 @@ While sliding window method is searching each box for a vehicle, if the classifi
 #smoothing
 sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
 smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+asmooth_filter=np.zeros((sample_img.shape[0], sample_img.shape[1], 9)).astype(np.float)
+filter_counter=0
 
 def frame_process(img):
-    global smooth_filter
+    global asmooth_filter, filter_counter
     ystart = 400
     ystop = 680
     #scales = [1.0, 1.5, 1.8, 2] #works good
-    #below is final
     scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
     box_list = []
     heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
-        out_img, hot_boxes = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
+        out_img, hot_boxes, conf_scores = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
                                        hist_bins)
     #transfer hot boxes to the box_list for heat map
-        for box_ in hot_boxes:
-            box_list.append(box_)
+        for i in range(len(hot_boxes)):
+            box_=hot_boxes[i]
+            if conf_scores[i] >= 1.0:
+                box_list.append(box_)
 
     heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
     # 7 works good
-    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-    heat=0.3*heat+0.7*smooth_filter
-    smooth_filter=heat
-    #"{0:.2f}".format(a)
-    #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
-    heat_thr=5
+    asmooth_filter[:,:,filter_counter]=heat
+    filter_counter=(filter_counter+1)%9
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    for i in range(9):
+        heat=heat+asmooth_filter[:,:,i]
+    heat=heat/9.0
+    heat_thr=7
     if debug_prt:
-        print('heat: mean, max, var, stdev', "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
+        print('filter_conter, heat: mean, max, var, stdev', filter_counter, "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
               "{0:.2f}".format(np.sqrt(heat.var())),
-              'smooth filter: mean, max, var', "{0:.2f}".format(smooth_filter.mean()), "{0:.2f}".format(smooth_filter.max()),
-              "{0:.2f}".format(np.sqrt(smooth_filter.var())), "{0:.2f}".format(heat_thr))
+              'smooth filter: mean, max, var', "{0:.2f}".format(asmooth_filter.mean()), "{0:.2f}".format(asmooth_filter.max()),
+              "{0:.2f}".format(np.sqrt(asmooth_filter.var())), "{0:.2f}".format(heat_thr))
     #heat_thr=smooth_filter.mean()+6.0*np.sqrt(smooth_filter.var())
     heat = apply_threshold(heat, heat_thr)
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
-    draw_img = draw_labeled_bboxes(np.copy(img), labels)
+    boxes=labels_to_boxes(labels)
+    print(boxes)
+    new_boxes=[]
+    for box in boxes:
+        x_size, y_size = box_size(box)
+        if x_size > 24 and y_size > 24:
+            print(box, x_size, y_size)
+            new_boxes.append(box)
+    draw_img = draw_boxes(img, new_boxes)
 
     return draw_img
-
 ```
 
 The pipeline was tested with number of different test images, where samples are shown below in different stages of the pipeline.
@@ -175,43 +186,50 @@ Another test image:
 ![alt text](./sample/heat_map2.png)*Vehicles in the image after heat map tresholding to reduce the number of false positives*
 ![alt text](./sample/final2.png)*Heat map of the hot boxes, which identify concentration of  identification to select vehicles to reduce the false positives, notice the false positive at the railing.*
 
-
+**Response to comments made by the reviewer for this section:** In order to improve robustness, I used the reviewers suggested method and I modified ```find_cars``` function to return the confidence score for each hot box using ```conf_score = svc.decision_function(test_features)```, then the pipeline only uses hot boxes whose confidence score exceeds a threshold. A threshold of 1.0 seems to yield a resonably well. I obtained this value by trial and error by chaning values from 0.5 to 2.0 at 0.5 steps. With this modification, majority of the false positivies are eliminated. Another method was also suggested by the reviewer is to eliminate small boxes which cannot hold a vehicle. I used 24x24 pixels as the threshold, this also eliminated most of the small boxes. With that, the new stil images provides much robust detection method.
 
 ### 3. Run your pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 
-The pipeline provided in Section 2 is used in processing the video files to identify vehicle in the video frames. However in order to identify vehicles better as well as utilize information from frame to frame, a smoothing filter, technically a moving average filter, is applied while obtaining the heat maps. Below the section of the pipeline where this smoothing was implemented is provided.
+The pipeline provided in Section 2 is used in processing the video files to identify vehicle in the video frames. However in order to identify vehicles better as well as utilize information from frame to frame, a smoothing method, is applied while obtaining the heat maps. Below the section of the pipeline where this smoothing was implemented is provided.
 
 ```python
 #smoothing
 sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
 smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
+asmooth_filter=np.zeros((sample_img.shape[0], sample_img.shape[1], 9)).astype(np.float)
+filter_counter=0
 
 def frame_process(img):
     ....
+    
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    # Add heat to each box in box list
     heat = add_heat(heat, box_list)
     # Apply threshold to help remove false positives
     # 7 works good
-    #new_heat = np.zeros_like(img[:, :, 0]).astype(np.float)
-    heat=0.3*heat+0.7*smooth_filter
-    smooth_filter=heat
+    asmooth_filter[:,:,filter_counter]=heat
+    filter_counter=(filter_counter+1)%9
+    heat = np.zeros_like(img[:, :, 0]).astype(np.float)
+    for i in range(9):
+        heat=heat+asmooth_filter[:,:,i]
+    heat=heat/9.0
     ....
-    return draw_img
+    heat = apply_threshold(heat, heat_thr)
+    ....
 ```
 
-The smoothing filter is a moving average similar to **X_k=a*X_current + (1-a)*X_(k-1)**, where **a** is less than 1.0. The smoothing significantly reduced some of the positive detections. 
-
-I also tried to adjust the heatmap threshold by using mean and variance of the heat map distribution such as given below:
-
-```
-heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
-
-```
-
-However this did not work as much as I anticipated in this initial trial. That is why a constant threshold value of 5 was selected after trying few different values. Some enhancements such as using only the searched area and more elaborative methods would be used in the future to identify the heatmap threshold adaptively. This should further reduce the false positives and increase robustness of the pipeline. 
+The smoothing filter is in this 2nd submission uses 10 last last frames heat maps and averages them to provide continuity.
+That method of smoothing significantly reduced false positive detections. 
 
 The output of the pipeline with the project movie clip is given below. There are moments that false positives as well as false negatives, where the classifier identifies non-vehicles as vehicle and fails to identify vehicles are present. However these are rare and the classifier achieves a successful identification of the vehicles most of the time. The full video clip of the pipeline output is provided below.
 
-[Link to project video result](./P5_ket_out_full.mp4) 
+[Link to project video result](./P5_ket_out_full.mp4)*Video output of previous pipeline, with moving average smoothing, and **no** confidence score and small box removals*
+
+[Link to project video result](./P5_ket_out_full_new.mp4)*Video output of previous pipeline, with moving average smoothing, and **no** confidence score and small box removals*
+
+**Response to comments made by the reviewer for this section:** Above mentioned smoothing filter that averages heat maps of 10 last frames is implemented in order to improve robustness. This suggestion by the review team was great and it worked well in the video processing.
+
+(1) Smoothing, (2) confidence score filtering, as well as (3) eliminating small hot boxes from the detections nearly eliminated all the false positivies. This is evidenced by the videos provided with earlier pipeline and new pipeline.
 
 
 ### 4. Discussions and Future Work
