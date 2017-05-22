@@ -144,7 +144,6 @@ print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
 #smoothing
 sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
-smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
 asmooth_filter=np.zeros((sample_img.shape[0], sample_img.shape[1], 9)).astype(np.float)
 filter_counter=0
 
@@ -155,7 +154,6 @@ def frame_process(img):
     #scales = [1.0, 1.5, 1.8, 2] #works good
     scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
     box_list = []
-    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
         out_img, hot_boxes, conf_scores = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
                                        hist_bins)
@@ -206,11 +204,11 @@ debug_movie=0
 if movie_mode:
 
     if debug_movie:
-        output_video = 'P5_ket_dummy.mp4'
-        #.subclip(35, 43)
+        output_video = 'P5_ket_out_full_new_clip.mp4'
+        #.subclip(38, 43) suggested from reviewer
         clip1 = VideoFileClip("project_video.mp4").subclip(35, 43)
     else:
-        output_video = 'P5_ket_out_dummy.mp4'
+        output_video = 'P5_ket_out_full_new_clip.mp4'
         clip1=VideoFileClip("project_video.mp4")
 
     out_clip=clip1.fl_image(frame_process)
