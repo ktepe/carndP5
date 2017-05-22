@@ -181,7 +181,7 @@ def frame_process(img):
     heat=heat/10.0
     #"{0:.2f}".format(a)
     #heat_thr = smooth_filter.mean() + 5.0 * np.sqrt(smooth_filter.var())
-    heat_thr=2
+    heat_thr=3
     if debug_prt:
         print('filter_conter, heat: mean, max, var, stdev', filter_counter, "{0:.2f}".format(heat.mean()), "{0:.2f}".format(heat.max()),
               "{0:.2f}".format(np.sqrt(heat.var())),
@@ -210,7 +210,7 @@ debug_movie=1
 if movie_mode:
 
     if debug_movie:
-        output_video = 'P5_ket_out_dbg_new2_cin10_th2.mp4'
+        output_video = 'P5_ket_out_dbg_new_cin10_th3_N10.mp4'
         #.subclip(35, 43)
         clip1 = VideoFileClip("project_video.mp4").subclip(35, 43)
     else:
