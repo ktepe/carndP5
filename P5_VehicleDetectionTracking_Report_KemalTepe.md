@@ -117,7 +117,6 @@ While sliding window method is searching each box for a vehicle, if the classifi
 ```python
 #smoothing
 sample_img = mpimg.imread('./sample/bbox-example-image.jpg')
-smooth_filter=np.zeros_like(sample_img[:,:,0]).astype(np.float)
 asmooth_filter=np.zeros((sample_img.shape[0], sample_img.shape[1], 9)).astype(np.float)
 filter_counter=0
 
@@ -128,7 +127,6 @@ def frame_process(img):
     #scales = [1.0, 1.5, 1.8, 2] #works good
     scales = [1.0, 1.2, 1.4, 1.5, 1.8, 2]
     box_list = []
-    heat_map_filter=np.zeros_like(img[:, :, 0]).astype(np.float)
     for scale in scales:
         out_img, hot_boxes, conf_scores = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size,
                                        hist_bins)
